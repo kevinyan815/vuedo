@@ -1,0 +1,59 @@
+version: '2'
+services:
+
+  # The Application
+  app:
+    build:
+      context: ./
+      dockerfile: app.dockerfile
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    environment:
+      # laravel uses Dotenv to set and load environment variables,by default it will not
+      # overwrite existing environment variables. So we set env variables for app container here
+      # then laravel will use these env values instead of the same env variables  defined in .env file.
+      - "DB_HOST=database"
+      - "APP_ENV=local"
+      - "APP_DEBUG=true"
+      - "DB_DATABASE=laravue"
+      - "DB_USERNAME=kevin"
+      - "DB_PASSWORD=secret"
+
+  composer:
+    restart: 'no'
+    build:
+      context: ./
+      dockerfile: composer.dockerfile
+    working_dir: /var/www
+    command: install
+    volumes:
+      - ~/.ssh:/root/.ssh
+      - ./:/var/www
+
+  # The Web Server
+  nginx:
+    build:
+      context: ./
+      dockerfile: nginx.dockerfile
+    working_dir: /var/www
+    volumes_from:
+      - app
+    ports:
+      - 8089:80
+
+  # The Database
+  database:
+    image: mysql:5.7
+    volumes:
+      - dbdata:/var/lib/mysql
+    environment:
+      - "MYSQL_DATABASE=laravue"
+      - "MYSQL_USER=kevin"
+      - "MYSQL_PASSWORD=secret"
+      - "MYSQL_ROOT_PASSWORD=secret"
+    ports:
+        - "33062:3306"
+
+volumes:
+  dbdata:
